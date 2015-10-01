@@ -49,6 +49,7 @@ void *mapmem(unsigned base, unsigned size)
    int mem_fd;
    unsigned offset = base % PAGE_SIZE;
    base = base - offset;
+   size = size + offset;
    /* open /dev/mem */
    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
       printf("can't open /dev/mem\nThis program should be run as root. Try prefixing command with: sudo\n");
@@ -62,10 +63,10 @@ void *mapmem(unsigned base, unsigned size)
       mem_fd,
       base);
 #ifdef DEBUG
-   printf("base=0x%x, mem=%p\n", base, mem);
+   printf("base=0x%x, mem=%p (offset=%u)\n", base, mem, offset);
 #endif
    if (mem == MAP_FAILED) {
-      printf("mmap error %d\n", (int)mem);
+      printf("mmap base=0x%uX, sz=%u (offset=%u): errno %d\n", base, size, offset, (int)errno);
       exit (-1);
    }
    close(mem_fd);
@@ -74,9 +75,13 @@ void *mapmem(unsigned base, unsigned size)
 
 void *unmapmem(void *addr, unsigned size)
 {
-   int s = munmap(addr, size);
+   unsigned base = (unsigned)addr;
+   unsigned offset = base % PAGE_SIZE;
+   base = base - offset;
+   size = size + offset;
+   int s = munmap(base, size);
    if (s != 0) {
-      printf("munmap error %d\n", s);
+      printf("munmap base=0x%uX %p sz=%u (offset=%u): errno=%d\n", base, size, offset, (int)errno);
       exit (-1);
    }
 
@@ -270,9 +275,9 @@ int mbox_open(void) {
    char filename[64];
 
    // open a char device file used for communicating with kernel mbox driver
-   sprintf(filename, "/tmp/mailbox-%d", getpid());
+   sprintf(filename, "/dev/rpi-ws281x-mailbox-%d", getpid());
    unlink(filename);
-   if (mknod(filename, S_IFCHR|0600, makedev(100, 0)) < 0) {
+   if (mknod(filename, S_IFCHR|0600, makedev(249, 0)) < 0) {
       printf("Failed to create mailbox device %s: %m\n", filename);
       return -1;
    }
