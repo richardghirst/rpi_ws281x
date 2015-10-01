@@ -277,7 +277,7 @@ int mbox_open(void) {
    // open a char device file used for communicating with kernel mbox driver
    sprintf(filename, "/dev/rpi-ws281x-mailbox-%d", getpid());
    unlink(filename);
-   if (mknod(filename, S_IFCHR|0600, makedev(100, 0)) < 0) {
+   if (mknod(filename, S_IFCHR|0600, makedev(249, 0)) < 0) {
       printf("Failed to create mailbox device %s: %m\n", filename);
       return -1;
    }
